@@ -1,5 +1,7 @@
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyListener;
+import java.util.Random;
 
 public class GameScene extends JPanel {
     public static final int UNIT_SIZE = 20;
@@ -7,15 +9,31 @@ public class GameScene extends JPanel {
     public static final int NUM_OF_ROWS = 30;
     public static final int SCREEN_WIDTH = NUM_OF_COLS*UNIT_SIZE;
     public static final int SCREEN_HEIGHT = NUM_OF_ROWS*UNIT_SIZE;
-    protected Shapes[] shapes;
+    public static final int MAX_UNITS = (NUM_OF_COLS*NUM_OF_ROWS);
+    protected Shape[] shapes;
+    protected int currentShape;
+    protected Random random;
+    protected Listener listener;
 
 
     public GameScene(){
-        this.shapes = new Shapes[10];
-        this.shapes[0] = new Shapes(0, 0 , UNIT_SIZE, UNIT_SIZE, 3);
+        this.random = new Random();
+        this.currentShape = -1;
+        this.shapes = new Shape[MAX_UNITS/4]; // divide by 4 because of the size of shapes.
+        newShape();
 
         this.setPreferredSize(new Dimension(SCREEN_WIDTH, SCREEN_HEIGHT));
         gameLoop();
+    }
+
+    public void newShape(){
+        this.currentShape++;
+        int randomShape = random.nextInt(7)+1;
+        this.shapes[currentShape] = new Shape(0, 0, randomShape);
+        // add listener when the shape created
+        listener = new Listener(shapes[currentShape]);
+        this.addKeyListener(listener);
+        this.setFocusable(true);
     }
 
     public void drawGrid(Graphics g){
@@ -30,12 +48,26 @@ public class GameScene extends JPanel {
 
     }
 
+    public void checkArrived(){
+        for (int i = 0; i < 4; i++) {
+           Block currentBlock =  shapes[currentShape].blocks[i];
+           if (currentBlock!=null){
+               if (currentBlock.y+UNIT_SIZE >= SCREEN_HEIGHT) {
+                   this.removeKeyListener(listener);
+                   newShape();
+               }
+           }
+        }
+    }
+
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         drawGrid(g);
-        shapes[0].paint(g);
+        for (int i = 0; i <= currentShape; i++) {
+            shapes[i].paint(g);
+        }
     }
 
     public void gameLoop(){
@@ -43,10 +75,11 @@ public class GameScene extends JPanel {
             @Override
             public void run() {
                 while (true){
+                    checkArrived();
                     repaint();
-                    shapes[0].move();
+                    shapes[currentShape].move();
                     try {
-                        Thread.sleep(1000);
+                        Thread.sleep(700);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
